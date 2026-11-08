@@ -1,4 +1,5 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
+import type { Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -8,16 +9,28 @@ import {
   getDb,
   saveDb,
   logActivity,
-  DatabaseSchema,
+  type DatabaseSchema,
 } from './server/db.ts';
-import { Article, UserRole, User } from './src/types/index.ts';
+import type { Article, UserRole, User } from './src/types/index.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+// Internal server must ALWAYS listen on port 3000 for Nginx reverse proxy
+const PORT = 3000;
 const isProduction = process.env.NODE_ENV === 'production';
+
+// CORS middleware
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
@@ -34,24 +47,27 @@ function getAuthUser(req: Request): User | null {
 }
 
 // ==================== AUTH ROUTES ====================
-app.post('/api/auth/login', (req: Request, res: Response) => {
+const handleLogin = (req: Request, res: Response) => {
   const { username, password } = req.body;
   if (!username || !password) {
-    return res.status(400).json({ error: 'Username dan password wajib diisi.' });
+    return res.status(400).json({ error: 'Username atau email dan kata sandi wajib diisi.' });
   }
 
   const db = getDb();
+  const normalized = String(username).trim().toLowerCase();
   const user = db.users.find(
-    (u) => u.username.toLowerCase() === username.trim().toLowerCase()
+    (u) =>
+      u.username.toLowerCase() === normalized ||
+      (u.email && u.email.toLowerCase() === normalized)
   );
 
   if (!user || !user.password) {
-    return res.status(401).json({ error: 'Username atau password tidak sesuai.' });
+    return res.status(401).json({ error: 'Username/email atau kata sandi tidak sesuai.' });
   }
 
   const match = bcrypt.compareSync(password, user.password);
   if (!match) {
-    return res.status(401).json({ error: 'Username atau password tidak sesuai.' });
+    return res.status(401).json({ error: 'Username/email atau kata sandi tidak sesuai.' });
   }
 
   logActivity(user.id, user.name, user.role, 'Login ke Sistem', 'Dashboard');
@@ -64,16 +80,22 @@ app.post('/api/auth/login', (req: Request, res: Response) => {
     user: safeUser,
     message: `Selamat datang, ${user.name}!`,
   });
-});
+};
 
-app.get('/api/auth/me', (req: Request, res: Response) => {
+const handleGetMe = (req: Request, res: Response) => {
   const user = getAuthUser(req);
   if (!user) {
     return res.status(401).json({ error: 'Tidak terautentikasi' });
   }
   const { password: _, ...safeUser } = user;
   return res.json({ user: safeUser });
-});
+};
+
+// Mount login and me endpoints with aliases for resilience
+app.post('/api/auth/login', handleLogin);
+app.post('/api/login', handleLogin);
+app.get('/api/auth/me', handleGetMe);
+app.get('/api/me', handleGetMe);
 
 // ==================== ARTICLES API ====================
 app.get('/api/articles', (req: Request, res: Response) => {
@@ -934,6 +956,13 @@ app.get('/robots.txt', (_req: Request, res: Response) => {
   const db = getDb();
   res.setHeader('Content-Type', 'text/plain');
   return res.send(db.settings.robotsTxtContent);
+});
+
+// ==================== API 404 FALLBACK ====================
+app.all('/api/*', (req: Request, res: Response) => {
+  return res.status(404).json({
+    error: `Rute API tidak ditemukan: ${req.method} ${req.originalUrl}`,
+  });
 });
 
 // ==================== VITE & SSR OPEN GRAPH HANDLER ====================

@@ -50,6 +50,12 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
+    if (res.status === 404) {
+      throw new Error(
+        errorData.error ||
+          'Layanan API (404 Not Found) belum siap atau rute tidak ditemukan. Silakan muat ulang halaman atau coba sesaat lagi.'
+      );
+    }
     throw new Error(errorData.error || `Request failed with status ${res.status}`);
   }
 
@@ -58,12 +64,33 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
 export const api = {
   // Auth
-  login: (credentials: { username: string; password: string }) =>
-    request<{ token: string; user: User; message: string }>('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(credentials),
-    }),
-  getMe: () => request<{ user: User }>('/api/auth/me'),
+  login: async (credentials: { username: string; password: string }) => {
+    try {
+      return await request<{ token: string; user: User; message: string }>('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(credentials),
+      });
+    } catch (err: any) {
+      // If 404 on /api/auth/login, try alternative /api/login endpoint
+      if (err.message && err.message.includes('404')) {
+        return await request<{ token: string; user: User; message: string }>('/api/login', {
+          method: 'POST',
+          body: JSON.stringify(credentials),
+        });
+      }
+      throw err;
+    }
+  },
+  getMe: async () => {
+    try {
+      return await request<{ user: User }>('/api/auth/me');
+    } catch (err: any) {
+      if (err.message && err.message.includes('404')) {
+        return await request<{ user: User }>('/api/me');
+      }
+      throw err;
+    }
+  },
 
   // Articles
   getArticles: (params: { category?: string; tag?: string; search?: string; status?: string; authorId?: string; limit?: number; page?: number } = {}) => {

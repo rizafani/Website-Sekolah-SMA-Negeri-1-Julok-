@@ -45,6 +45,17 @@
       "bio": "Guru Bahasa & Sastra Indonesia, Pembina Majalah Dinding & Jurnalistik.",
       "password": "$2b$10$5EJu1XQ4fgA6EPvmAf0HQOA07GPJPTotlQEXWwTEZNdIprYIx3l8C",
       "createdAt": "2026-01-12T11:00:00Z"
+    },
+    {
+      "id": "usr_rizafani",
+      "username": "rizafani",
+      "name": "Rizafani (Administrator)",
+      "role": "admin",
+      "email": "rizafani@gmail.com",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&h=200&q=80",
+      "bio": "Administrator Utama SMA Negeri 1 Julok.",
+      "password": "$2b$10$CFIFuFCDLynKSukbb1bf6.3vv4r32umSOw0pWxto/JTz.4fwy.rUe",
+      "createdAt": "2026-11-08T08:53:58.136Z"
     }
   ],
   "articles": [
@@ -731,9 +742,9 @@
     "robotsTxtContent": "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /editor\nDisallow: /guru\nDisallow: /api/\n\nSitemap: https://sman1julok.sch.id/sitemap.xml"
   },
   "stats": {
-    "totalVisits": 14850,
-    "todayVisits": 342,
-    "lastVisitDate": "2026-03-02",
+    "totalVisits": 14851,
+    "todayVisits": 1,
+    "lastVisitDate": "2026-11-08",
     "dailyHistory": [
       {
         "date": "2026-02-24",
@@ -762,15 +773,91 @@
       {
         "date": "2026-03-02",
         "count": 342
+      },
+      {
+        "date": "2026-11-08",
+        "count": 1
       }
     ],
     "deviceBreakdown": {
-      "mobile": 68,
+      "mobile": 69,
       "desktop": 27,
       "tablet": 5
     }
   },
   "logs": [
+    {
+      "id": "log_1794128149179_b060",
+      "userId": "usr_rizafani",
+      "userName": "Rizafani (Administrator)",
+      "role": "admin",
+      "action": "Login ke Sistem",
+      "target": "Dashboard",
+      "timestamp": "2026-11-08T08:55:49.179Z"
+    },
+    {
+      "id": "log_1794128138616_jz1u",
+      "userId": "usr_admin",
+      "userName": "Super Administrator SMAN 1 Julok",
+      "role": "admin",
+      "action": "Login ke Sistem",
+      "target": "Dashboard",
+      "timestamp": "2026-11-08T08:55:38.616Z"
+    },
+    {
+      "id": "log_1794128134925_h668",
+      "userId": "usr_rizafani",
+      "userName": "Rizafani (Administrator)",
+      "role": "admin",
+      "action": "Login ke Sistem",
+      "target": "Dashboard",
+      "timestamp": "2026-11-08T08:55:34.925Z"
+    },
+    {
+      "id": "log_1794128131299_3ipo",
+      "userId": "usr_rizafani",
+      "userName": "Rizafani (Administrator)",
+      "role": "admin",
+      "action": "Login ke Sistem",
+      "target": "Dashboard",
+      "timestamp": "2026-11-08T08:55:31.299Z"
+    },
+    {
+      "id": "log_1794128126897_a960",
+      "userId": "usr_admin",
+      "userName": "Super Administrator SMAN 1 Julok",
+      "role": "admin",
+      "action": "Login ke Sistem",
+      "target": "Dashboard",
+      "timestamp": "2026-11-08T08:55:26.897Z"
+    },
+    {
+      "id": "log_1794127955847_robk",
+      "userId": "usr_admin",
+      "userName": "Super Administrator SMAN 1 Julok",
+      "role": "admin",
+      "action": "Login ke Sistem",
+      "target": "Dashboard",
+      "timestamp": "2026-11-08T08:52:35.847Z"
+    },
+    {
+      "id": "log_1794127764052_isma",
+      "userId": "usr_admin",
+      "userName": "Super Administrator SMAN 1 Julok",
+      "role": "admin",
+      "action": "Login ke Sistem",
+      "target": "Dashboard",
+      "timestamp": "2026-11-08T08:49:24.052Z"
+    },
+    {
+      "id": "log_1794127651598_9ge4",
+      "userId": "usr_admin",
+      "userName": "Super Administrator SMAN 1 Julok",
+      "role": "admin",
+      "action": "Login ke Sistem",
+      "target": "Dashboard",
+      "timestamp": "2026-11-08T08:47:31.598Z"
+    },
     {
       "id": "log_1",
       "userId": "usr_guru1",

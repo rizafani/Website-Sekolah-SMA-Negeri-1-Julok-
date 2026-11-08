@@ -89,7 +89,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess, onBackToHome })
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
             <div>
               <label className="block font-bold text-slate-700 mb-1">
-                Username Akun
+                Username atau Email Akun
               </label>
               <div className="relative">
                 <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -98,7 +98,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess, onBackToHome })
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="admin / editor / guru"
+                  placeholder="admin / editor / guru / rizafani@gmail.com"
                   className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 text-xs font-semibold"
                 />
               </div>
@@ -161,11 +161,25 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess, onBackToHome })
 
               <button
                 type="button"
+                onClick={() => handleQuickLogin('rizafani', 'admin123')}
+                className="p-2.5 rounded-xl border border-purple-200 bg-purple-50/60 hover:bg-purple-100/80 transition text-left flex items-center justify-between group"
+              >
+                <div>
+                  <span className="font-bold text-xs text-purple-900 block">2. Admin (Rizafani)</span>
+                  <span className="text-[10px] text-purple-700 font-mono">User: rizafani / rizafani@gmail.com | Pass: admin123</span>
+                </div>
+                <span className="text-[10px] bg-purple-600 text-white px-2 py-0.5 rounded font-bold">
+                  Masuk Rizafani →
+                </span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => handleQuickLogin('editor', 'editor123')}
                 className="p-2.5 rounded-xl border border-blue-200 bg-blue-50/60 hover:bg-blue-100/80 transition text-left flex items-center justify-between group"
               >
                 <div>
-                  <span className="font-bold text-xs text-blue-900 block">2. Editor (Publikasi Instan Konten)</span>
+                  <span className="font-bold text-xs text-blue-900 block">3. Editor (Publikasi Instan Konten)</span>
                   <span className="text-[10px] text-blue-700 font-mono">User: editor | Pass: editor123</span>
                 </div>
                 <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded font-bold">
@@ -179,7 +193,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess, onBackToHome })
                 className="p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/60 hover:bg-emerald-100/80 transition text-left flex items-center justify-between group"
               >
                 <div>
-                  <span className="font-bold text-xs text-emerald-900 block">3. Guru (Drs. M. Nasir, M.Pd - Fisika)</span>
+                  <span className="font-bold text-xs text-emerald-900 block">4. Guru (Drs. M. Nasir, M.Pd - Fisika)</span>
                   <span className="text-[10px] text-emerald-700 font-mono">User: guru | Pass: guru123</span>
                 </div>
                 <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded font-bold">

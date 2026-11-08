@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
-import {
+import type {
   User,
   Article,
   Category,
@@ -97,6 +97,17 @@ function getInitialSeedData(): DatabaseSchema {
       email: 'admin@sman1julok.sch.id',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&h=200&q=80',
       bio: 'Kepala Pusat Data & Pengelola Sistem Informasi SMA Negeri 1 Julok.',
+      password: adminHash,
+      createdAt: '2026-01-01T08:00:00Z',
+    },
+    {
+      id: 'usr_rizafani',
+      username: 'rizafani',
+      name: 'Rizafani (Administrator)',
+      role: 'admin',
+      email: 'rizafani@gmail.com',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&h=200&q=80',
+      bio: 'Administrator Utama SMA Negeri 1 Julok.',
       password: adminHash,
       createdAt: '2026-01-01T08:00:00Z',
     },
