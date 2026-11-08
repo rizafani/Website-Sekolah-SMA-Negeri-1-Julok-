@@ -1,0 +1,6 @@
+{
+  "name": "SMA Negeri 1 Julok - Portal Resmi & CMS Sekolah",
+  "description": "Website resmi SMA Negeri 1 Julok dengan sistem publikasi berita instan, CMS terpadu untuk Admin, Editor, dan Guru, SEO Google & Open Graph otomatis, dan informasi akademik lengkap.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
