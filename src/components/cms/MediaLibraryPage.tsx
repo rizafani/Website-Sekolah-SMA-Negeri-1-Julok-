@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../services/api.ts';
 import { MediaFile } from '../../types/index.ts';
+import { ImageUploadField } from '../common/ImageUploadField.tsx';
 
 export const MediaLibraryPage: React.FC = () => {
   const [mediaList, setMediaList] = useState<MediaFile[]>([]);
@@ -244,6 +245,20 @@ export const MediaLibraryPage: React.FC = () => {
 
             <form onSubmit={handleUploadSubmit} className="p-6 space-y-4 text-xs">
               <div>
+                <ImageUploadField
+                  label="Pilih / Unggah Berkas Gambar"
+                  value={uploadUrl}
+                  onChange={(url) => {
+                    setUploadUrl(url);
+                    if (!uploadName) {
+                      setUploadName(`Media_SMAN1_Julok_${Date.now()}`);
+                    }
+                  }}
+                  aspectRatio="landscape"
+                />
+              </div>
+
+              <div>
                 <label className="block font-semibold text-slate-700 mb-1">Nama Berkas *</label>
                 <input
                   type="text"
@@ -252,18 +267,6 @@ export const MediaLibraryPage: React.FC = () => {
                   onChange={(e) => setUploadName(e.target.value)}
                   placeholder="Gedung_Baru_SMAN1_Julok.webp"
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-1 focus:ring-blue-600"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">URL Sumber Berkas / Foto *</label>
-                <input
-                  type="text"
-                  required
-                  value={uploadUrl}
-                  onChange={(e) => setUploadUrl(e.target.value)}
-                  placeholder="https://images.unsplash.com/photo-..."
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-1 focus:ring-blue-600 font-mono"
                 />
               </div>
 

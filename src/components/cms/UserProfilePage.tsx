@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { UserCheck, Save, Key, ShieldCheck, Mail, Phone, Award } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { api } from '../../services/api.ts';
+import { ImageUploadField } from '../common/ImageUploadField.tsx';
 
 export const UserProfilePage: React.FC = () => {
   const { user } = useAuth();
@@ -9,6 +10,7 @@ export const UserProfilePage: React.FC = () => {
   const [email, setEmail] = useState(user?.email || '');
   const [nip, setNip] = useState(user?.nip || '');
   const [bio, setBio] = useState(user?.bio || '');
+  const [avatar, setAvatar] = useState(user?.avatar || '');
   const [password, setPassword] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -23,6 +25,7 @@ export const UserProfilePage: React.FC = () => {
         email,
         nip,
         bio,
+        avatar,
         ...(password.trim() ? { password } : {}),
       });
       alert('Profil Anda berhasil diperbarui!');
@@ -41,23 +44,29 @@ export const UserProfilePage: React.FC = () => {
           Profil Pengguna Saya
         </h1>
         <p className="text-xs text-slate-500 mt-1">
-          Kelola informasi nama, NIP, bio publikasi, dan ganti kata sandi akun Anda.
+          Kelola informasi nama, NIP, foto avatar, bio publikasi, dan ganti kata sandi akun Anda.
         </p>
       </div>
 
       <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
-        <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-slate-100">
-          <img
-            src={user.avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&h=200&q=80'}
-            alt={user.name}
-            className="w-20 h-20 rounded-2xl object-cover ring-4 ring-blue-50 shadow-md"
-          />
-          <div className="space-y-1 text-center sm:text-left">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pb-6 border-b border-slate-100 items-start">
+          <div className="sm:col-span-1">
+            <ImageUploadField
+              label="Foto Profil / Avatar"
+              value={avatar || user.avatar || ''}
+              onChange={setAvatar}
+              aspectRatio="square"
+            />
+          </div>
+          <div className="sm:col-span-2 space-y-1.5 self-center">
             <h3 className="text-lg font-bold text-slate-900">{user.name}</h3>
             <p className="text-xs text-slate-500 font-mono">@{user.username}</p>
             <span className="inline-block px-3 py-0.5 rounded-full text-xs font-bold uppercase bg-blue-100 text-blue-800">
               {user.role} (Publikasi Mandiri)
             </span>
+            <p className="text-xs text-slate-500 pt-2 leading-relaxed">
+              Foto ini akan ditampilkan di kartu penulis setiap artikel berita yang Anda publikasikan di portal SMAN 1 Julok.
+            </p>
           </div>
         </div>
 

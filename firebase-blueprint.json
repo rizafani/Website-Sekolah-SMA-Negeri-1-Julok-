@@ -1,0 +1,181 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Akun pengguna sistem sekolah dengan hak akses Administrator, Editor, atau Guru",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID unik pengguna" },
+        "username": { "type": "string", "description": "Username unik untuk login" },
+        "name": { "type": "string", "description": "Nama lengkap pengguna" },
+        "role": { "type": "string", "enum": ["admin", "editor", "guru"], "description": "Hak akses sistem" },
+        "email": { "type": "string", "format": "email", "description": "Alamat email resmi" },
+        "avatar": { "type": "string", "description": "URL foto profil" },
+        "nip": { "type": "string", "description": "NIP untuk guru" },
+        "bio": { "type": "string", "description": "Biografi singkat atau mata pelajaran yang diampu" },
+        "createdAt": { "type": "string", "description": "Waktu pembuatan akun" }
+      },
+      "required": ["id", "username", "name", "role", "email"]
+    },
+    "Article": {
+      "title": "Article",
+      "description": "Artikel dan berita kegiatan sekolah yang dapat diterbitkan instan",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID unik artikel" },
+        "slug": { "type": "string", "description": "Slug URL SEO friendly" },
+        "title": { "type": "string", "description": "Judul artikel" },
+        "content": { "type": "string", "description": "Isi lengkap artikel format HTML/Rich Text" },
+        "excerpt": { "type": "string", "description": "Ringkasan artikel untuk preview" },
+        "featuredImage": { "type": "string", "description": "Gambar utama artikel" },
+        "category": { "type": "string", "description": "Nama kategori artikel" },
+        "tags": { "type": "array", "description": "Daftar tag kata kunci" },
+        "authorId": { "type": "string", "description": "ID penulis" },
+        "authorName": { "type": "string", "description": "Nama lengkap penulis" },
+        "authorRole": { "type": "string", "enum": ["admin", "editor", "guru"], "description": "Peran penulis" },
+        "status": { "type": "string", "enum": ["published", "draft"], "description": "Status publikasi" },
+        "publishedAt": { "type": "string", "description": "Waktu penerbitan" },
+        "createdAt": { "type": "string", "description": "Waktu dibuat" },
+        "updatedAt": { "type": "string", "description": "Waktu pembaruan" },
+        "views": { "type": "number", "description": "Jumlah pembaca" },
+        "seoTitle": { "type": "string", "description": "Judul optimasi SEO" },
+        "metaDescription": { "type": "string", "description": "Deskripsi meta untuk pencarian" },
+        "canonicalUrl": { "type": "string", "description": "Canonical URL artikel" },
+        "ogImage": { "type": "string", "description": "Gambar spesifik Open Graph" },
+        "altImage": { "type": "string", "description": "ALT text gambar utama" },
+        "focusKeyword": { "type": "string", "description": "Kata kunci fokus SEO" }
+      },
+      "required": ["id", "slug", "title", "content", "excerpt", "category", "authorId", "authorName", "status"]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "Pengumuman resmi dari pihak sekolah",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID pengumuman" },
+        "title": { "type": "string", "description": "Judul pengumuman" },
+        "content": { "type": "string", "description": "Isi lengkap pengumuman" },
+        "date": { "type": "string", "description": "Tanggal pengumuman" },
+        "priority": { "type": "string", "enum": ["biasa", "penting", "sangat-penting"], "description": "Tingkat prioritas" },
+        "target": { "type": "string", "description": "Sasaran pengumuman" },
+        "author": { "type": "string", "description": "Penulis pengumuman" },
+        "active": { "type": "boolean", "description": "Status keaktifan pengumuman" }
+      },
+      "required": ["id", "title", "content", "date", "priority"]
+    },
+    "AgendaItem": {
+      "title": "AgendaItem",
+      "description": "Jadwal dan agenda kegiatan sekolah",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID agenda" },
+        "title": { "type": "string", "description": "Judul kegiatan" },
+        "dateStart": { "type": "string", "description": "Tanggal mulai" },
+        "dateEnd": { "type": "string", "description": "Tanggal selesai" },
+        "time": { "type": "string", "description": "Waktu pelaksanaan" },
+        "location": { "type": "string", "description": "Tempat pelaksanaan" },
+        "description": { "type": "string", "description": "Deskripsi agenda" },
+        "organizer": { "type": "string", "description": "Penyelenggara agenda" }
+      },
+      "required": ["id", "title", "dateStart", "location"]
+    },
+    "GalleryItem": {
+      "title": "GalleryItem",
+      "description": "Dokumentasi foto dan video kegiatan sekolah",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID dokumentasi" },
+        "title": { "type": "string", "description": "Judul foto/video" },
+        "type": { "type": "string", "enum": ["photo", "video"], "description": "Tipe media" },
+        "url": { "type": "string", "description": "URL gambar atau link embed video" },
+        "caption": { "type": "string", "description": "Keterangan dokumentasi" },
+        "date": { "type": "string", "description": "Tanggal kegiatan" },
+        "category": { "type": "string", "description": "Kategori dokumentasi" }
+      },
+      "required": ["id", "title", "type", "url"]
+    },
+    "PPDBRegistration": {
+      "title": "PPDBRegistration",
+      "description": "Formulir pendaftaran peserta didik baru (PPDB)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID pendaftaran" },
+        "registrationNumber": { "type": "string", "description": "Nomor registrasi unik resmi" },
+        "fullName": { "type": "string", "description": "Nama lengkap calon siswa" },
+        "nisn": { "type": "string", "description": "Nomor Induk Siswa Nasional (NISN)" },
+        "nik": { "type": "string", "description": "Nomor Induk Kependudukan (NIK)" },
+        "gender": { "type": "string", "enum": ["Laki-laki", "Perempuan"], "description": "Jenis kelamin" },
+        "birthPlace": { "type": "string", "description": "Tempat lahir" },
+        "birthDate": { "type": "string", "description": "Tanggal lahir" },
+        "originSchool": { "type": "string", "description": "Asal SMP/MTs" },
+        "graduationYear": { "type": "string", "description": "Tahun kelulusan" },
+        "parentName": { "type": "string", "description": "Nama orang tua / wali" },
+        "parentPhone": { "type": "string", "description": "Nomor telepon/WhatsApp aktif" },
+        "address": { "type": "string", "description": "Alamat tempat tinggal lengkap" },
+        "track": { "type": "string", "enum": ["Zonasi", "Prestasi", "Afirmasi", "Perpindahan Orang Tua"], "description": "Jalur pendaftaran" },
+        "status": { "type": "string", "enum": ["Menunggu Verifikasi", "Diterima", "Cadangan", "Ditolak"], "description": "Status pendaftaran" },
+        "registeredAt": { "type": "string", "description": "Waktu pendaftaran" },
+        "notes": { "type": "string", "description": "Catatan panitia PPDB" }
+      },
+      "required": ["id", "registrationNumber", "fullName", "nisn", "gender", "originSchool", "parentPhone", "track", "status"]
+    },
+    "SchoolSettings": {
+      "title": "SchoolSettings",
+      "description": "Konfigurasi identitas sekolah, kepala sekolah, SEO global, dan sitemap",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Nama resmi sekolah" },
+        "shortName": { "type": "string", "description": "Nama singkat sekolah" },
+        "npsn": { "type": "string", "description": "Nomor Pokok Sekolah Nasional" },
+        "akreditasi": { "type": "string", "description": "Peringkat akreditasi" },
+        "slogan": { "type": "string", "description": "Slogan resmi sekolah" },
+        "headmasterName": { "type": "string", "description": "Nama kepala sekolah" },
+        "headmasterNip": { "type": "string", "description": "NIP kepala sekolah" },
+        "headmasterWelcome": { "type": "string", "description": "Kata sambutan kepala sekolah" },
+        "headmasterPhoto": { "type": "string", "description": "Foto resmi kepala sekolah" },
+        "address": { "type": "string", "description": "Alamat lengkap sekolah" },
+        "phone": { "type": "string", "description": "Nomor telepon sekolah" },
+        "whatsapp": { "type": "string", "description": "Nomor WhatsApp resmi" },
+        "email": { "type": "string", "format": "email", "description": "Email resmi sekolah" },
+        "website": { "type": "string", "description": "URL website resmi" },
+        "mapsEmbedUrl": { "type": "string", "description": "URL embed Google Maps" },
+        "seoTitle": { "type": "string", "description": "SEO Title utama" },
+        "metaDescription": { "type": "string", "description": "Meta Description utama" },
+        "canonicalBase": { "type": "string", "description": "URL kanonikal basis" },
+        "ogImageDefault": { "type": "string", "description": "Gambar Open Graph default" },
+        "robotsTxtContent": { "type": "string", "description": "Isi robots.txt" }
+      },
+      "required": ["name", "npsn", "headmasterName", "address", "email"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Koleksi profil akun pengguna sistem CMS sekolah"
+    },
+    "/articles/{articleId}": {
+      "schema": { "$ref": "#/entities/Article" },
+      "description": "Koleksi artikel dan berita kegiatan sekolah"
+    },
+    "/announcements/{announcementId}": {
+      "schema": { "$ref": "#/entities/Announcement" },
+      "description": "Koleksi pengumuman resmi sekolah"
+    },
+    "/agenda/{agendaId}": {
+      "schema": { "$ref": "#/entities/AgendaItem" },
+      "description": "Koleksi agenda dan jadwal kegiatan sekolah"
+    },
+    "/gallery/{galleryId}": {
+      "schema": { "$ref": "#/entities/GalleryItem" },
+      "description": "Koleksi dokumentasi foto dan video"
+    },
+    "/ppdb/{registrationId}": {
+      "schema": { "$ref": "#/entities/PPDBRegistration" },
+      "description": "Koleksi formulir pendaftaran siswa baru PPDB"
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/SchoolSettings" },
+      "description": "Koleksi pengaturan konfigurasi dan SEO sekolah"
+    }
+  }
+}

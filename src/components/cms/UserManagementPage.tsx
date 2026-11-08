@@ -3,6 +3,7 @@ import { Users, UserPlus, Edit2, Trash2, Key, Shield, Check, X } from 'lucide-re
 import { api } from '../../services/api.ts';
 import { User, UserRole } from '../../types/index.ts';
 import { useAuth } from '../../context/AuthContext.tsx';
+import { ImageUploadField } from '../common/ImageUploadField.tsx';
 
 export const UserManagementPage: React.FC = () => {
   const { user: currentUser } = useAuth();
@@ -20,6 +21,7 @@ export const UserManagementPage: React.FC = () => {
     password: '',
     nip: '',
     bio: '',
+    avatar: '',
   });
 
   useEffect(() => {
@@ -49,7 +51,7 @@ export const UserManagementPage: React.FC = () => {
       await api.createUser(formData);
       alert('Pengguna baru berhasil ditambahkan!');
       setShowAddModal(false);
-      setFormData({ username: '', name: '', role: 'guru', email: '', password: '', nip: '', bio: '' });
+      setFormData({ username: '', name: '', role: 'guru', email: '', password: '', nip: '', bio: '', avatar: '' });
       loadUsers();
     } catch (err: any) {
       alert(err.message || 'Gagal membuat akun');
@@ -94,6 +96,7 @@ export const UserManagementPage: React.FC = () => {
       password: '',
       nip: u.nip || '',
       bio: u.bio || '',
+      avatar: u.avatar || '',
     });
   };
 
@@ -111,7 +114,7 @@ export const UserManagementPage: React.FC = () => {
 
         <button
           onClick={() => {
-            setFormData({ username: '', name: '', role: 'guru', email: '', password: '', nip: '', bio: '' });
+            setFormData({ username: '', name: '', role: 'guru', email: '', password: '', nip: '', bio: '', avatar: '' });
             setShowAddModal(true);
           }}
           className="px-4 py-2.5 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition flex items-center gap-2 self-start sm:self-auto"
@@ -226,6 +229,15 @@ export const UserManagementPage: React.FC = () => {
             </div>
 
             <form onSubmit={editingUser ? handleUpdate : handleCreate} className="p-6 space-y-4 text-xs">
+              <div>
+                <ImageUploadField
+                  label="Foto Profil Pengguna (Avatar)"
+                  value={formData.avatar}
+                  onChange={(url) => setFormData({ ...formData, avatar: url })}
+                  aspectRatio="square"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Username Login *</label>

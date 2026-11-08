@@ -14,6 +14,7 @@ import {
 import confetti from 'canvas-confetti';
 import { api } from '../../services/api.ts';
 import { PPDBRegistration } from '../../types/index.ts';
+import { ImageUploadField } from '../common/ImageUploadField.tsx';
 
 export const PPDBPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -29,6 +30,7 @@ export const PPDBPage: React.FC = () => {
     parentPhone: '',
     address: '',
     chosenTrack: 'Zonasi' as PPDBRegistration['chosenTrack'],
+    photo: '',
   });
 
   const [registeredItem, setRegisteredItem] = useState<PPDBRegistration | null>(null);
@@ -126,7 +128,18 @@ export const PPDBPage: React.FC = () => {
               <p className="text-[11px] text-slate-500">Tahun Ajaran 2026/2027 • Jalur {registeredItem.chosenTrack}</p>
             </div>
 
-            <table className="w-full text-xs text-left border-collapse">
+            <div className="flex flex-col sm:flex-row gap-6 items-start">
+              {registeredItem.photo && (
+                <div className="w-28 h-36 shrink-0 rounded-xl overflow-hidden border-2 border-slate-300 shadow-xs bg-slate-100">
+                  <img
+                    src={registeredItem.photo}
+                    alt={registeredItem.fullName}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+              <div className="flex-1 w-full">
+                <table className="w-full text-xs text-left border-collapse">
               <tbody>
                 <tr className="border-b border-slate-100">
                   <td className="py-2 text-slate-500 w-44 font-semibold">Nomor Registrasi</td>
@@ -168,6 +181,8 @@ export const PPDBPage: React.FC = () => {
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
 
             <div className="pt-4 border-t border-slate-200 flex items-center justify-between text-xs">
               <div className="space-y-1">
@@ -443,6 +458,15 @@ export const PPDBPage: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                     placeholder="Gampong Blang Pauh Dua, Kec. Julok, Kab. Aceh Timur"
                     className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 text-xs"
+                  />
+                </div>
+
+                <div>
+                  <ImageUploadField
+                    label="Pas Foto Calon Siswa (Ukuran 3x4)"
+                    value={formData.photo}
+                    onChange={(url) => setFormData({ ...formData, photo: url })}
+                    aspectRatio="portrait"
                   />
                 </div>
 

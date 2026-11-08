@@ -13,6 +13,7 @@ import {
 import { api } from '../../services/api.ts';
 import { SchoolSettings } from '../../types/index.ts';
 import { GooglePreview } from '../common/GooglePreview.tsx';
+import { ImageUploadField } from '../common/ImageUploadField.tsx';
 
 export const SEOSettingsPage: React.FC = () => {
   const [settings, setSettings] = useState<SchoolSettings | null>(null);
@@ -179,12 +180,11 @@ export const SEOSettingsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="font-semibold text-slate-700 block mb-1">Default Open Graph Image (1200x630)</label>
-              <input
-                type="text"
+              <ImageUploadField
+                label="Default Open Graph Image (1200x630)"
                 value={settings.ogImageDefault}
-                onChange={(e) => setSettings({ ...settings, ogImageDefault: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-1 focus:ring-blue-600 font-mono"
+                onChange={(url) => setSettings({ ...settings, ogImageDefault: url })}
+                aspectRatio="landscape"
               />
             </div>
           </form>

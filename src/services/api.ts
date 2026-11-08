@@ -267,4 +267,66 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ data }),
     }),
+
+  // File Upload API
+  uploadFile: async (
+    fileOrData: File | string,
+    fileName: string = 'image.png',
+    fileType: string = 'image/png',
+    altText?: string
+  ) => {
+    let base64 = '';
+    let name = fileName;
+    let type = fileType;
+
+    if (typeof window !== 'undefined' && fileOrData instanceof File) {
+      name = fileOrData.name;
+      type = fileOrData.type;
+      base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(fileOrData);
+      });
+    } else {
+      base64 = fileOrData as string;
+    }
+
+    return request<{ url: string; name: string; size: number; type: string; id: string; message: string }>('/api/upload', {
+      method: 'POST',
+      body: JSON.stringify({ fileData: base64, fileName: name, fileType: type, altText }),
+    });
+  },
+
+  // AI Assistant APIs
+  generateAIArticle: (params: {
+    topic: string;
+    category?: string;
+    tone?: string;
+    length?: 'short' | 'medium' | 'long';
+    keywords?: string;
+  }) =>
+    request<{
+      title: string;
+      content: string;
+      excerpt: string;
+      category: string;
+      tags: string[];
+      seoTitle: string;
+      metaDescription: string;
+      focusKeyword: string;
+      featuredImage: string;
+      altImage: string;
+      aiGenerated: boolean;
+      model: string;
+    }>('/api/ai/generate-article', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    }),
+
+  refineAIText: (params: { text: string; action: 'expand' | 'summarize' | 'grammar' | 'seo' | 'catchy-title' }) =>
+    request<{ result: string }>('/api/ai/refine-text', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    }),
 };

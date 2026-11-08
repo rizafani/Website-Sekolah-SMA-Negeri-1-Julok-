@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../services/api.ts';
 import { SchoolSettings } from '../../types/index.ts';
+import { ImageUploadField } from '../common/ImageUploadField.tsx';
 
 export const SchoolSettingsPage: React.FC = () => {
   const [settings, setSettings] = useState<SchoolSettings | null>(null);
@@ -178,12 +179,11 @@ export const SchoolSettingsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="font-semibold text-slate-700 block mb-1">URL Foto Resmi Kepala Sekolah</label>
-              <input
-                type="text"
+              <ImageUploadField
+                label="Foto Resmi Kepala Sekolah"
                 value={settings.headmasterPhoto}
-                onChange={(e) => setSettings({ ...settings, headmasterPhoto: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-1 focus:ring-blue-600 font-mono"
+                onChange={(url) => setSettings({ ...settings, headmasterPhoto: url })}
+                aspectRatio="portrait"
               />
             </div>
 

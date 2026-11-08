@@ -1,0 +1,130 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email != null && request.auth.token.email == 'rizafani@gmail.com' && request.auth.token.email_verified == true) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    function isEditorOrGuru() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'editor', 'guru']
+      );
+    }
+
+    // Validation Helpers
+    function isValidArticle(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.slug is string && data.slug.size() <= 200 &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 300 &&
+             data.content is string && data.content.size() <= 500000 &&
+             data.excerpt is string && data.excerpt.size() <= 1000 &&
+             data.category is string && data.category.size() <= 100 &&
+             data.status in ['published', 'draft'] &&
+             data.authorId is string && data.authorName is string;
+    }
+
+    function isValidPPDB(data) {
+      return data.registrationNumber is string && data.registrationNumber.size() <= 50 &&
+             data.fullName is string && data.fullName.size() > 0 && data.fullName.size() <= 200 &&
+             data.nisn is string && data.nisn.size() <= 20 &&
+             data.parentPhone is string && data.parentPhone.size() <= 30 &&
+             data.originSchool is string && data.originSchool.size() <= 150 &&
+             data.track in ['Zonasi', 'Prestasi', 'Afirmasi', 'Perpindahan Orang Tua'] &&
+             data.status in ['Menunggu Verifikasi', 'Diterima', 'Cadangan', 'Ditolak'];
+    }
+
+    // User Profiles
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isSuperAdmin());
+      allow list: if isSuperAdmin();
+      allow create: if isSuperAdmin() || (isSignedIn() && request.auth.uid == userId && incoming().role != 'admin');
+      allow update: if isSuperAdmin() || (
+        isSignedIn() && request.auth.uid == userId &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'avatar', 'bio'])
+      );
+      allow delete: if isSuperAdmin();
+    }
+
+    // Articles & Berita Sekolah
+    match /articles/{articleId} {
+      // Public can read published articles
+      allow get: if existing().status == 'published' || isEditorOrGuru();
+      allow list: if resource.data.status == 'published' || isEditorOrGuru();
+
+      // Instant publication by Admin, Editor, or Guru
+      allow create: if isEditorOrGuru() &&
+                       isValidId(articleId) &&
+                       isValidArticle(incoming()) &&
+                       (isSuperAdmin() || incoming().authorId == request.auth.uid);
+
+      allow update: if isEditorOrGuru() &&
+                       isValidArticle(incoming()) &&
+                       (isSuperAdmin() || existing().authorId == request.auth.uid);
+
+      allow delete: if isSuperAdmin() || (
+        isEditorOrGuru() && existing().authorId == request.auth.uid
+      );
+    }
+
+    // Announcements
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    // Agenda
+    match /agenda/{agendaId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    // Gallery
+    match /gallery/{galleryId} {
+      allow read: if true;
+      allow write: if isEditorOrGuru();
+    }
+
+    // PPDB Online
+    match /ppdb/{registrationId} {
+      // Public can submit registration
+      allow create: if isValidId(registrationId) &&
+                       isValidPPDB(incoming()) &&
+                       incoming().status == 'Menunggu Verifikasi';
+      // Only Admin / Panitia can read or update registration status
+      allow read, update, delete: if isSuperAdmin();
+    }
+
+    // School Settings
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+  }
+}

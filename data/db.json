@@ -879,6 +879,15 @@
   ],
   "media": [
     {
+      "id": "med_1794139332865_vs8f",
+      "name": "test_upload.png",
+      "url": "/uploads/1794139332864_test_upload_png.png",
+      "size": 70,
+      "type": "image/png",
+      "altText": "Test Image",
+      "uploadedAt": "2026-11-08T12:02:12.865Z"
+    },
+    {
       "id": "med_1",
       "name": "Gedung_Utama_SMAN1_Julok.webp",
       "url": "https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=1200&h=800&q=80",

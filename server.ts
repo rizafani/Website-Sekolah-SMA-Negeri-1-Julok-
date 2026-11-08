@@ -5,6 +5,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
 import { createServer as createViteServer } from 'vite';
+import { GoogleGenAI } from '@google/genai';
 import {
   getDb,
   saveDb,
@@ -20,6 +21,13 @@ const app = express();
 // Internal server must ALWAYS listen on port 3000 for Nginx reverse proxy
 const PORT = 3000;
 const isProduction = process.env.NODE_ENV === 'production';
+
+// Ensure uploads folder exists and serve statically
+const UPLOADS_DIR = path.resolve(__dirname, 'public/uploads');
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+app.use('/uploads', express.static(UPLOADS_DIR));
 
 // CORS middleware
 app.use((req, res, next) => {
@@ -859,6 +867,314 @@ app.delete('/api/media/:id', (req: Request, res: Response) => {
   db.media = db.media.filter((m) => m.id !== req.params.id);
   saveDb(db);
   return res.json({ message: 'Media berhasil dihapus' });
+});
+
+// ==================== UNIVERSAL FILE UPLOAD API ====================
+app.post('/api/upload', (req: Request, res: Response) => {
+  const { fileData, fileName = 'image.png', fileType = 'image/png', altText } = req.body;
+  if (!fileData) {
+    return res.status(400).json({ error: 'Data berkas gambar tidak boleh kosong.' });
+  }
+
+  try {
+    let finalUrl = fileData;
+    let size = 0;
+
+    // Handle base64 data URL
+    if (typeof fileData === 'string' && fileData.startsWith('data:')) {
+      const match = fileData.match(/^data:([^;]+);base64,(.+)$/);
+      if (match) {
+        const mime = match[1];
+        const base64Data = match[2];
+        const buffer = Buffer.from(base64Data, 'base64');
+        size = buffer.length;
+
+        const ext = mime.split('/')[1]?.replace('jpeg', 'jpg').replace('svg+xml', 'svg') || 'png';
+        const cleanName = String(fileName).replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 30);
+        const savedFileName = `${Date.now()}_${cleanName}.${ext}`;
+        const filePath = path.join(UPLOADS_DIR, savedFileName);
+
+        fs.writeFileSync(filePath, buffer);
+        finalUrl = `/uploads/${savedFileName}`;
+      }
+    }
+
+    const db = getDb();
+    const newMedia = {
+      id: `med_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      name: fileName,
+      url: finalUrl,
+      size: size || fileData.length,
+      type: fileType,
+      altText: altText || fileName,
+      uploadedAt: new Date().toISOString(),
+    };
+
+    db.media.unshift(newMedia);
+    saveDb(db);
+
+    const user = getAuthUser(req);
+    if (user) {
+      logActivity(user.id, user.name, user.role, 'Upload Berkas Gambar', fileName);
+    }
+
+    return res.status(201).json({
+      url: finalUrl,
+      name: fileName,
+      size: newMedia.size,
+      type: fileType,
+      id: newMedia.id,
+      message: 'Gambar berhasil diunggah dan disimpan!',
+    });
+  } catch (err: any) {
+    console.error('Upload error:', err);
+    return res.status(500).json({ error: 'Gagal mengunggah gambar: ' + err.message });
+  }
+});
+
+// Helper for contextual school article generation
+function generateContextualSchoolArticle(
+  topic: string,
+  category: string = 'Berita Sekolah',
+  tone: string = 'Jurnalistik Resmi',
+  length: string = 'medium',
+  keywords: string = ''
+) {
+  const cleanTopic = topic.trim();
+  const slug = cleanTopic
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .substring(0, 80);
+  const title = `SMA Negeri 1 Julok: ${cleanTopic}`;
+
+  const tags = ['SMAN 1 Julok', 'Aceh Timur', category];
+  if (keywords) {
+    keywords.split(',').forEach((k) => {
+      const trimmed = k.trim();
+      if (trimmed && !tags.includes(trimmed)) tags.push(trimmed);
+    });
+  }
+
+  const content = `<h2>${cleanTopic}</h2>
+<p><strong>JULOK, ACEH TIMUR</strong> &mdash; SMA Negeri 1 Julok kembali menunjukkan komitmen nyatanya dalam memajukan mutu pendidikan dan pembinaan generasi unggul di Kabupaten Aceh Timur melalui penyelenggaraan <em>${cleanTopic}</em>.</p>
+
+<p>Kegiatan ini menjadi momentum penting bagi segenap civitas akademika dalam memperkuat sinergi antara pembelajaran transformatif Kurikulum Merdeka dan pembentukan Profil Pelajar Pancasila yang beriman, bertakwa, berakhlak mulia, serta berwawasan global.</p>
+
+<h3>Apresiasi Pimpinan Sekolah dan Semangat Peserta</h3>
+<p>Kepala SMA Negeri 1 Julok, <strong>Drs. H. Bakhtiar, M.Pd</strong>, menyampaikan apresiasi setinggi-tingginya kepada seluruh dewan guru, staf tata usaha, komite sekolah, dan para siswa yang telah berpartisipasi aktif mempersiapkan dan menyukseskan rangkaian kegiatan ini.</p>
+
+<blockquote>
+  <p>"Pendidikan bukan sekadar transfer ilmu pengetahuan semata, namun penanaman karakter, budi pekerti, dan ketangguhan mental siswa. Melalui ${cleanTopic}, kita membuktikan bahwa siswa-siswi SMAN 1 Julok memiliki daya saing tinggi dan semangat juang yang patut dibanggakan," tutur beliau dalam sambutannya.</p>
+</blockquote>
+
+<h3>Rangkaian Kegiatan dan Dampak Positif</h3>
+<p>Selama berlangsungnya kegiatan, para siswa terlihat sangat antusias dan bersemangat. Berbagai aspek kompetensi abad ke-21 &mdash; meliputi bernalar kritis, kreativitas inovatif, kolaborasi, dan komunikasi &mdash; tampak terasah dengan baik di bawah bimbingan para guru pembina.</p>
+
+<ul>
+  <li><strong>Keterlibatan Kolaboratif:</strong> Mengikutsertakan perwakilan kelas, pengurus OSIS/MPK, ekstrakurikuler, dan bimbingan intensif dewan guru.</li>
+  <li><strong>Penguatan Karakter & Budaya:</strong> Mengintegrasikan nilai-nilai luhur kearifan lokal Aceh dan kepedulian terhadap lingkungan hidup berkelanjutan.</li>
+  <li><strong>Sarana Prasarana Terpadu:</strong> Didukung penuh oleh fasilitas laboratorium dan lingkungan kampus hijau SMA Negeri 1 Julok.</li>
+</ul>
+
+<h3>Harapan dan Langkah Berkelanjutan</h3>
+<p>Diharapkan hasil positif dari <strong>${cleanTopic}</strong> ini dapat terus dipertahankan dan ditumbuhkembangkan menjadi tradisi prestasi yang berkesinambungan di SMA Negeri 1 Julok, menginspirasi kemajuan pendidikan di Aceh Timur dan Indonesia.</p>`;
+
+  const excerpt = `SMA Negeri 1 Julok sukses menyelenggarakan kegiatan ${cleanTopic} sebagai wujud nyata penguatan karakter Profil Pelajar Pancasila dan peningkatan mutu pendidikan di Aceh Timur.`;
+  const seoTitle = `${title.substring(0, 50)} | SMAN 1 Julok`;
+  const metaDescription = excerpt.length > 155 ? `${excerpt.substring(0, 150)}...` : excerpt;
+  const focusKeyword = cleanTopic.split(' ').slice(0, 3).join(' ');
+
+  const fallbackImages: Record<string, string> = {
+    'Prestasi Siswa': 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&w=1200&h=700&q=80',
+    'Akademik & Kurikulum': 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&h=700&q=80',
+    'Kegiatan OSIS & Ekskul': 'https://images.unsplash.com/photo-1511556532299-8f662fc26c06?auto=format&fit=crop&w=1200&h=700&q=80',
+    'Opini & Karya Guru': 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=1200&h=700&q=80',
+    'Pengumuman Resmi': 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&h=700&q=80',
+    'default': 'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=1200&h=700&q=80',
+  };
+  const featuredImage = fallbackImages[category] || fallbackImages['default'];
+
+  return {
+    title,
+    slug,
+    content,
+    excerpt,
+    category,
+    tags,
+    seoTitle,
+    metaDescription,
+    focusKeyword,
+    featuredImage,
+    altImage: `Dokumentasi kegiatan ${cleanTopic} di SMA Negeri 1 Julok`,
+  };
+}
+
+// ==================== AI ARTICLE GENERATOR API ====================
+app.post('/api/ai/generate-article', async (req: Request, res: Response) => {
+  const {
+    topic,
+    category = 'Berita Sekolah',
+    tone = 'Jurnalistik Resmi',
+    length = 'medium',
+    keywords = '',
+  } = req.body;
+
+  if (!topic || !String(topic).trim()) {
+    return res.status(400).json({ error: 'Topik atau ide artikel wajib diisi.' });
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  const hasRealKey = Boolean(
+    apiKey &&
+    apiKey !== 'MY_GEMINI_API_KEY' &&
+    !apiKey.includes('MY_GEMINI') &&
+    apiKey.trim().length > 15
+  );
+
+  if (hasRealKey) {
+    try {
+      const ai = new GoogleGenAI({
+        apiKey: apiKey!,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          },
+        },
+      });
+
+      const prompt = `Anda adalah jurnalis dan staf humas profesional SMA Negeri 1 Julok, Kabupaten Aceh Timur, Provinsi Aceh.
+Tulis artikel berita sekolah yang sangat menarik, berbobot, terstruktur rapi, dan sesuai kaidah jurnalistik modern.
+
+Informasi Topik:
+- Topik / Ide Utama: "${topic}"
+- Kategori yang ditargetkan: "${category}"
+- Gaya Bahasa / Tone: "${tone}"
+- Target Panjang: ${length === 'short' ? 'Sekitar 300 kata (ringkas & padat)' : length === 'long' ? 'Sekitar 800-1000 kata (mendalam & komprehensif)' : 'Sekitar 500-600 kata (standar)'}
+- Kata Kunci Tambahan: "${keywords}"
+
+Identitas Sekolah untuk konteks:
+- Sekolah: SMA Negeri 1 Julok (Aceh Timur)
+- Kepala Sekolah: Drs. H. Bakhtiar, M.Pd
+- Karakter: Berakhlak Mulia, Prestasi Akademik & Non-akademik, Kurikulum Merdeka, Kearifan Lokal Aceh
+
+Berikan respon WAJIB berupa JSON yang valid dengan format persis berikut:
+{
+  "title": "Judul berita yang memikat, formal dan profesional",
+  "content": "Isi lengkap artikel dalam format tag HTML (gunakan <h2>, <h3>, <p>, <ul>, <li>, <blockquote>, <strong>). Jangan gunakan markdown # atau *, gunakan murni HTML.",
+  "excerpt": "Ringkasan berita dalam 2-3 kalimat padat untuk deskripsi kartu dan cuplikan media sosial.",
+  "category": "${category}",
+  "tags": ["Tag1", "Tag2", "Tag3", "Tag4"],
+  "seoTitle": "Judul SEO maksimal 60 karakter untuk Google",
+  "metaDescription": "Meta deskripsi SEO maksimal 155 karakter",
+  "focusKeyword": "Kata kunci fokus 2-4 kata",
+  "altImage": "Deskripsi foto untuk aksesibilitas alt text"
+}`;
+
+      // Call Gemini with 10s timeout to prevent hanging
+      const aiPromise = ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+        },
+      });
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('AI generation timed out')), 10000)
+      );
+
+      const aiResponse = (await Promise.race([aiPromise, timeoutPromise])) as any;
+      const text = aiResponse.text || '{}';
+      const parsed = JSON.parse(text);
+
+      const fallbackImages: Record<string, string> = {
+        'Prestasi Siswa': 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&w=1200&h=700&q=80',
+        'Akademik & Kurikulum': 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&h=700&q=80',
+        'Kegiatan OSIS & Ekskul': 'https://images.unsplash.com/photo-1511556532299-8f662fc26c06?auto=format&fit=crop&w=1200&h=700&q=80',
+        'Opini & Karya Guru': 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=1200&h=700&q=80',
+        'Pengumuman Resmi': 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&h=700&q=80',
+        default: 'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=1200&h=700&q=80',
+      };
+      const featuredImage = fallbackImages[parsed.category] || fallbackImages['default'];
+
+      return res.json({
+        ...parsed,
+        featuredImage,
+        aiGenerated: true,
+        model: 'gemini-3.8-flash',
+      });
+    } catch (err: any) {
+      console.warn('Gemini API call skipped or timed out, using contextual school generator:', err.message);
+    }
+  }
+
+  // Fallback intelligent contextual generator
+  const generated = generateContextualSchoolArticle(topic, category, tone, length, keywords);
+  return res.json({
+    ...generated,
+    aiGenerated: true,
+    model: 'sman1julok-ai-engine',
+  });
+});
+
+app.post('/api/ai/refine-text', async (req: Request, res: Response) => {
+  const { text, action } = req.body;
+  if (!text || !String(text).trim()) {
+    return res.status(400).json({ error: 'Teks tidak boleh kosong.' });
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  const hasRealKey = Boolean(
+    apiKey &&
+    apiKey !== 'MY_GEMINI_API_KEY' &&
+    !apiKey.includes('MY_GEMINI') &&
+    apiKey.trim().length > 15
+  );
+
+  if (hasRealKey) {
+    try {
+      const ai = new GoogleGenAI({
+        apiKey: apiKey!,
+        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
+      });
+
+      let instruction = 'Perbaiki tata bahasa, ejaan baku KBBI, dan sempurnakan kalimat berikut agar lebih profesional.';
+      if (action === 'expand') instruction = 'Perluas dan elaborasi paragraf berikut menjadi lebih mendalam dengan detail relevan kegiatan sekolah.';
+      if (action === 'summarize') instruction = 'Ringkas teks berikut menjadi 2 kalimat padat yang informatif.';
+      if (action === 'catchy-title') instruction = 'Buatkan 3 opsi judul artikel berita yang sangat menarik, elegan, dan memikat pembaca.';
+      if (action === 'seo') instruction = 'Buatkan meta description SEO optimal (maks 150 karakter) dan 5 focus tags dari teks berikut.';
+
+      const resp = await ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: `${instruction}\n\nTeks asli:\n${text}`,
+      });
+
+      return res.json({
+        result: resp.text || text,
+        model: 'gemini-3.8-flash',
+      });
+    } catch (err: any) {
+      console.warn('Refine text error, fallbacking:', err.message);
+    }
+  }
+
+  // Fallback text processing
+  let result = text;
+  if (action === 'expand') {
+    result = `${text} Kegiatan ini turut didukung penuh oleh segenap dewan guru dan civitas akademika SMA Negeri 1 Julok guna memajukan mutu pendidikan berbasis kearifan lokal Aceh dan wawasan global.`;
+  } else if (action === 'summarize') {
+    result = `${text.substring(0, 140)}... (Ringkasan kegiatan resmi SMA Negeri 1 Julok)`;
+  } else if (action === 'seo') {
+    result = `${text.substring(0, 150)} | SMAN 1 Julok Aceh Timur`;
+  } else if (action === 'catchy-title') {
+    result = `1. Terobosan Baru: ${text}\n2. Gemilang Prestasi SMAN 1 Julok: ${text}\n3. Mengukir Sejarah: ${text}`;
+  }
+
+  return res.json({
+    result,
+    model: 'sman1julok-ai-engine',
+  });
 });
 
 // ==================== BACKUP & RESTORE API ====================

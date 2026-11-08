@@ -27,6 +27,9 @@ import {
 import { Article, Category } from '../../types/index.ts';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { GooglePreview } from '../common/GooglePreview.tsx';
+import { ImageUploadField } from '../common/ImageUploadField.tsx';
+import { AIArticleModal } from './AIArticleModal.tsx';
+import { api } from '../../services/api.ts';
 
 interface ArticleEditorProps {
   initialArticle?: Article | null;
@@ -64,8 +67,11 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
 
   // Rich text editor state
   const editorRef = useRef<HTMLDivElement>(null);
+  const inlineFileInputRef = useRef<HTMLInputElement>(null);
   const [editorContent, setEditorContent] = useState(initialArticle?.content || '<p>Tuliskan isi berita kegiatan SMA Negeri 1 Julok di sini...</p>');
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [uploadingInline, setUploadingInline] = useState(false);
   const [saving, setSaving] = useState(false);
   const [seoTab, setSeoTab] = useState<'edit' | 'google' | 'social'>('edit');
 
@@ -140,9 +146,70 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
   const insertImage = () => {
     const url = prompt('Masukkan URL Gambar (Unsplash atau link foto):', 'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=800&q=80');
     if (url) {
-      const imgHtml = `<p><img src="${url}" alt="${title || 'Foto kegiatan'}" style="width:100%; max-height:450px; object-fit:cover; border-radius:12px; margin:14px 0;" /></p>`;
+      const imgHtml = `<figure style="margin:20px 0; text-align:center;"><img src="${url}" alt="${title || 'Foto kegiatan'}" style="width:100%; max-height:480px; object-fit:cover; border-radius:14px; box-shadow:0 4px 12px rgba(0,0,0,0.08);" /><figcaption style="font-size:12px; color:#64748b; margin-top:8px; font-style:italic;">Dokumentasi: ${title || 'Kegiatan SMA Negeri 1 Julok'}</figcaption></figure><p></p>`;
       formatDoc('insertHTML', imgHtml);
     }
+  };
+
+  // Direct file upload for inline images
+  const handleInlineFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingInline(true);
+    try {
+      const uploaded = await api.uploadFile(file);
+      const imgHtml = `<figure style="margin:20px 0; text-align:center;"><img src="${uploaded.url}" alt="${file.name}" style="width:100%; max-height:480px; object-fit:cover; border-radius:14px; box-shadow:0 4px 12px rgba(0,0,0,0.08);" /><figcaption style="font-size:12px; color:#64748b; margin-top:8px; font-style:italic;">Dokumentasi kegiatan: ${title || file.name.replace(/\.[^/.]+$/, '')}</figcaption></figure><p></p>`;
+      formatDoc('insertHTML', imgHtml);
+    } catch (err: any) {
+      // Fallback: FileReader data URL
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        const imgHtml = `<figure style="margin:20px 0; text-align:center;"><img src="${dataUrl}" alt="${file.name}" style="width:100%; max-height:480px; object-fit:cover; border-radius:14px; box-shadow:0 4px 12px rgba(0,0,0,0.08);" /><figcaption style="font-size:12px; color:#64748b; margin-top:8px; font-style:italic;">Dokumentasi: ${title || 'Foto Kegiatan'}</figcaption></figure><p></p>`;
+        formatDoc('insertHTML', imgHtml);
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setUploadingInline(false);
+      if (inlineFileInputRef.current) inlineFileInputRef.current.value = '';
+    }
+  };
+
+  // Apply AI generated article
+  const handleApplyAIArticle = (aiData: {
+    title: string;
+    slug?: string;
+    content: string;
+    excerpt?: string;
+    category?: string;
+    tags?: string[];
+    seoTitle?: string;
+    metaDescription?: string;
+    focusKeyword?: string;
+    altImage?: string;
+    featuredImage?: string;
+  }) => {
+    if (aiData.title) setTitle(aiData.title);
+    if (aiData.slug) setSlug(aiData.slug);
+    if (aiData.excerpt) setExcerpt(aiData.excerpt);
+    if (aiData.content) {
+      setEditorContent(aiData.content);
+      if (editorRef.current) {
+        editorRef.current.innerHTML = aiData.content;
+      }
+    }
+    if (aiData.category) setCategory(aiData.category);
+    if (aiData.tags && aiData.tags.length > 0) setTagsInput(aiData.tags.join(', '));
+    if (aiData.seoTitle) setSeoTitle(aiData.seoTitle);
+    if (aiData.metaDescription) setMetaDescription(aiData.metaDescription);
+    if (aiData.focusKeyword) setFocusKeyword(aiData.focusKeyword);
+    if (aiData.altImage) setAltImage(aiData.altImage);
+    if (aiData.featuredImage) {
+      setFeaturedImage(aiData.featuredImage);
+      if (!ogImage) setOgImage(aiData.featuredImage);
+    }
+    setShowAIModal(false);
   };
 
   const insertYouTube = () => {
@@ -241,6 +308,14 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setShowAIModal(true)}
+              className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-xs rounded-xl shadow-md transition flex items-center gap-1.5"
+            >
+              <Sparkles className="w-4 h-4 text-slate-950" />
+              Buat Artikel AI (Gemini)
+            </button>
+
             {initialArticle && onDelete && (
               <button
                 onClick={() => {
@@ -438,11 +513,41 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
                 <button
                   type="button"
                   onClick={insertImage}
-                  title="Sisipkan Gambar Inline"
+                  title="Sisipkan Gambar dari URL"
                   className="p-2 rounded hover:bg-slate-200 text-slate-700 transition"
                 >
                   <ImageIcon className="w-4 h-4" />
                 </button>
+                
+                {/* Direct Local Image Upload Button */}
+                <input
+                  type="file"
+                  ref={inlineFileInputRef}
+                  onChange={handleInlineFileSelect}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => inlineFileInputRef.current?.click()}
+                  disabled={uploadingInline}
+                  title="Unggah Foto dari Perangkat & Sisipkan ke Teks"
+                  className="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs font-bold flex items-center gap-1.5 transition"
+                >
+                  <ImageIcon className="w-3.5 h-3.5 text-blue-700" />
+                  {uploadingInline ? 'Mengunggah...' : 'Unggah Foto'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowAIModal(true)}
+                  title="Buka AI Generator Artikel & Berita"
+                  className="px-2.5 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-950 text-xs font-bold flex items-center gap-1.5 transition shadow-xs"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-700" />
+                  Bantuan AI
+                </button>
+
                 <button
                   type="button"
                   onClick={insertYouTube}
@@ -567,13 +672,11 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
                     </div>
 
                     <div>
-                      <label className="font-semibold text-slate-700 block mb-1">Open Graph Image (1200x630)</label>
-                      <input
-                        type="text"
+                      <ImageUploadField
+                        label="Open Graph Image (1200x630)"
                         value={ogImage}
-                        onChange={(e) => setOgImage(e.target.value)}
-                        placeholder="URL gambar banner share media sosial..."
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-1 focus:ring-blue-600 text-xs"
+                        onChange={setOgImage}
+                        aspectRatio="landscape"
                       />
                     </div>
                   </div>
@@ -659,60 +762,15 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
 
             {/* Featured Image */}
             <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">
-                Gambar Utama (Featured Image)
-              </h3>
-
-              <div className="aspect-[16/9] w-full rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
-                <img src={featuredImage} alt="Preview Gambar Utama" className="w-full h-full object-cover" />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-600 mb-1">URL Gambar Utama:</label>
-                <input
-                  type="text"
-                  value={featuredImage}
-                  onChange={(e) => {
-                    setFeaturedImage(e.target.value);
-                    if (!ogImage) setOgImage(e.target.value);
-                  }}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-600"
-                />
-              </div>
-
-              <div className="space-y-1 text-[11px] text-slate-500">
-                <p>Pilihan Preset Cepat:</p>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setFeaturedImage('https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&w=1200&h=700&q=80')}
-                    className="p-1.5 text-[10px] bg-slate-100 hover:bg-slate-200 rounded text-slate-700 truncate text-left"
-                  >
-                    🏆 Prestasi / OSN
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFeaturedImage('https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&h=700&q=80')}
-                    className="p-1.5 text-[10px] bg-slate-100 hover:bg-slate-200 rounded text-slate-700 truncate text-left"
-                  >
-                    🎨 Gelar Karya / P5
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFeaturedImage('https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=1200&h=700&q=80')}
-                    className="p-1.5 text-[10px] bg-slate-100 hover:bg-slate-200 rounded text-slate-700 truncate text-left"
-                  >
-                    🕌 Rohis & Maulid
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFeaturedImage('https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=1200&h=700&q=80')}
-                    className="p-1.5 text-[10px] bg-slate-100 hover:bg-slate-200 rounded text-slate-700 truncate text-left"
-                  >
-                    💻 Workshop Guru
-                  </button>
-                </div>
-              </div>
+              <ImageUploadField
+                label="Gambar Utama (Featured Image)"
+                value={featuredImage}
+                onChange={(url) => {
+                  setFeaturedImage(url);
+                  if (!ogImage) setOgImage(url);
+                }}
+                aspectRatio="landscape"
+              />
             </div>
           </div>
         </div>
@@ -766,6 +824,17 @@ export const ArticleEditor: React.FC<ArticleEditorProps> = ({
             </article>
           </div>
         </div>
+      )}
+
+      {/* AI Article Generator Modal */}
+      {showAIModal && (
+        <AIArticleModal
+          onClose={() => setShowAIModal(false)}
+          onApplyArticle={handleApplyAIArticle}
+          currentTitle={title}
+          currentContent={editorContent}
+          categories={categories}
+        />
       )}
     </div>
   );

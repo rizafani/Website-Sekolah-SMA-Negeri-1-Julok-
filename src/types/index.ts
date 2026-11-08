@@ -155,6 +155,7 @@ export interface PPDBRegistration {
   parentPhone: string;
   address: string;
   chosenTrack: 'Zonasi' | 'Prestasi' | 'Afirmasi' | 'Perpindahan Orang Tua';
+  photo?: string;
   status: 'pending' | 'verified' | 'accepted' | 'rejected';
   submittedAt: string;
 }
